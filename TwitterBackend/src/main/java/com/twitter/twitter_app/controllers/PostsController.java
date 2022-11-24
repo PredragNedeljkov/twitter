@@ -1,15 +1,19 @@
 package com.twitter.twitter_app.controllers;
 
 import com.twitter.twitter_app.models.Post;
+import com.twitter.twitter_app.models.User;
 import com.twitter.twitter_app.models.UserInReaction;
 import com.twitter.twitter_app.payload.request.ReactionRequest;
 import com.twitter.twitter_app.payload.request.SavePost;
 import com.twitter.twitter_app.payload.response.PostDto;
 import com.twitter.twitter_app.payload.response.ReactionResponse;
+import com.twitter.twitter_app.payload.response.UserAndPostsResponse;
 import com.twitter.twitter_app.repository.PostsRepository;
+import com.twitter.twitter_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -27,27 +31,43 @@ public class PostsController {
     @Autowired
     PostsRepository postsRepository;
 
-    @GetMapping("user/{userId}")
-    ResponseEntity<List<PostDto>> getPostsByUser(@PathVariable String userId) {
-        List<Post> posts = postsRepository.findPostsByUserId(userId).orElse(Collections.emptyList());
+    @Autowired
+    UserRepository userRepository;
 
-        List<PostDto> dtos = new ArrayList<>();
+    @GetMapping("user/{userId}")
+    @PreAuthorize("hasRole('REGULAR_USER') or hasRole('BUSINESS_USER')")
+    ResponseEntity<UserAndPostsResponse> getPostsByUser(@PathVariable String userId) {
+        var optUser = userRepository.findById(userId);
+        if (!optUser.isPresent()) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+
+        User u = optUser.get();
+        var dto = new UserAndPostsResponse();
+        dto.setUserName(u.getName());
+        dto.setUserLastName(u.getLastName());
+
+        List<Post> posts = postsRepository.findPostsByUserId(userId).orElse(Collections.emptyList());
+        List<PostDto> postDtos = new ArrayList<>();
         posts.forEach(post -> {
-            PostDto dto = new PostDto();
-            dto.setId(post.getId());
-            dto.setContent(post.getContent());
-            dto.setTimestamp(post.getTimestamp());
-            dto.setUserName(post.getUserName());
-            dto.setUserLastName(post.getUserLastName());
-            dto.setLikes(post.getLikes() != null ? post.getLikes() : new ArrayList<>());
-            dto.setImagePath(post.getImage());
-            dtos.add(dto);
+            PostDto postDto = new PostDto();
+            postDto.setId(post.getId());
+            postDto.setContent(post.getContent());
+            postDto.setTimestamp(post.getTimestamp());
+            postDto.setUserName(post.getUserName());
+            postDto.setUserLastName(post.getUserLastName());
+            postDto.setLikes(post.getLikes() != null ? post.getLikes() : new ArrayList<>());
+            postDto.setImagePath(post.getImage());
+            postDtos.add(postDto);
         });
 
-        return new ResponseEntity<>(dtos, HttpStatus.OK);
+        dto.setPosts(postDtos);
+        return new ResponseEntity<>(dto, HttpStatus.OK);
+
     }
 
     @PostMapping("")
+    @PreAuthorize("hasRole('REGULAR_USER') or hasRole('BUSINESS_USER')")
     ResponseEntity<?> addNewPost(@RequestBody SavePost requestBody) {
         Post newPost = new Post();
         newPost.setContent(requestBody.getContent());
@@ -63,6 +83,7 @@ public class PostsController {
     }
 
     @PostMapping("/like")
+    @PreAuthorize("hasRole('REGULAR_USER') or hasRole('BUSINESS_USER')")
     ResponseEntity<?> likePost(@RequestBody ReactionRequest requestBody) {
         Optional<Post> optional = postsRepository.findById(requestBody.getPostId());
 

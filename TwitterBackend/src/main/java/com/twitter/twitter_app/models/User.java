@@ -7,14 +7,26 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "users")
+@Data
 public class User {
   @Id
   private String id;
+
+  @NotBlank
+  @Size(max = 100)
+  private String name;
+
+  @Size(max = 100)
+  private String lastName;
+
+  @Size(max = 100)
+  private String website;
 
   @NotBlank
   @Size(max = 20)
@@ -80,4 +92,5 @@ public class User {
   public void setRoles(Set<Role> roles) {
     this.roles = roles;
   }
+
 }

@@ -11,6 +11,7 @@ import com.twitter.twitter_app.models.ERole;
 import com.twitter.twitter_app.models.Role;
 import com.twitter.twitter_app.models.User;
 import com.twitter.twitter_app.payload.request.LoginRequest;
+import com.twitter.twitter_app.payload.request.SignupBusinessRequest;
 import com.twitter.twitter_app.payload.request.SignupRequest;
 import com.twitter.twitter_app.payload.response.JwtResponse;
 import com.twitter.twitter_app.payload.response.MessageResponse;
@@ -86,44 +87,52 @@ public class AuthController {
 					.body(new MessageResponse("Error: Email is already in use!"));
 		}
 
-		// Create new user's account
 		User user = new User(signUpRequest.getUsername(),
 							 signUpRequest.getEmail(),
 							 encoder.encode(signUpRequest.getPassword()));
 
-		Set<String> strRoles = signUpRequest.getRoles();
+		user.setName(signUpRequest.getName());
+		user.setLastName(signUpRequest.getLastName());
+
 		Set<Role> roles = new HashSet<>();
-
-		if (strRoles == null) {
-			Role userRole = roleRepository.findByName(ERole.ROLE_REGULAR_USER)
-					.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-			roles.add(userRole);
-		} else {
-			strRoles.forEach(role -> {
-				switch (role) {
-				case "admin":
-					Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(adminRole);
-
-					break;
-				case "business":
-					Role modRole = roleRepository.findByName(ERole.ROLE_BUSINESS_USER)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(modRole);
-
-					break;
-				default:
-					Role userRole = roleRepository.findByName(ERole.ROLE_REGULAR_USER)
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(userRole);
-				}
-			});
-		}
+		Role userRole = roleRepository.findByName(ERole.ROLE_REGULAR_USER)
+				.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+		roles.add(userRole);
 
 		user.setRoles(roles);
 		userRepository.save(user);
 
 		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+	}
+
+	@PostMapping("/signup-business")
+	public ResponseEntity<?> registerBusinessUser(@Valid @RequestBody SignupBusinessRequest signUpRequest) {
+		if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+			return ResponseEntity
+					.badRequest()
+					.body(new MessageResponse("Error: Username is already taken!"));
+		}
+
+		if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+			return ResponseEntity
+					.badRequest()
+					.body(new MessageResponse("Error: Email is already in use!"));
+		}
+
+		User user = new User(signUpRequest.getUsername(),
+				signUpRequest.getEmail(),
+				encoder.encode(signUpRequest.getPassword()));
+
+		user.setWebsite(signUpRequest.getUsername());
+
+		Set<Role> roles = new HashSet<>();
+		Role userRole = roleRepository.findByName(ERole.ROLE_BUSINESS_USER)
+				.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+		roles.add(userRole);
+
+		user.setRoles(roles);
+		userRepository.save(user);
+
+		return ResponseEntity.ok(new MessageResponse("Business user registered successfully!"));
 	}
 }
