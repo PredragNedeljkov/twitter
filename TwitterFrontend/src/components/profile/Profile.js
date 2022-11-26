@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
-import { getProfileAndPosts, saveNewComment, likePost, dislikePost, getImagesURL, followUser, acceptFollowingRequest, declineFollowingRequest } from './ProfileService';
+import { getProfileAndPosts, likePost } from './ProfileService';
 import { connect } from 'react-redux';
 import Post from '../post/Post';
 import { saveNewPost } from '../post/PostService';
@@ -18,23 +18,22 @@ function Profile(props) {
     const imageFile = useRef(null);
     const smallImage = useRef(null);
     const [imageLoaded, setImageLoaded] = useState(false);
-    const [urlError, setUrlError] = useState(false);
 
     useEffect(() => {
         const userId = props.requestUserId ? props.requestUserId : props.userId;
         getProfileAndPosts(userId, props.token).then(response => {
-            console.log(response)
             setProfile({
                 name: response.data.userName,
                 lastName: response.data.userLastName,
-                posts: response.data.posts
+                posts: response.data.posts,
+                roles: response.data.roles,
             });
         });
     }, []);
 
     function savePostHandler() {
         const postText = newPostText.current.value;
-        if (postText === "" && urlError) {
+        if (postText === "") {
             return;
         }
 
@@ -97,15 +96,20 @@ function Profile(props) {
                         <div className="fb-timeline-img">
                             <img src="https://g.foolcdn.com/editorial/images/451536/twitter-bird-on-blue-background.png" alt="" style={{width: '100%', height: 'auto', maxHeight: '280px', borderRadius: '4px 4px 0 0', WebkitBorderRadius: '4px 4px 0 0'}} />
                         </div>
-                        <div className="fb-name" style={{bottom: '5px', left: '175px', position: 'absolute'}}>
+                        <div className="fb-name" style={{bottom: '10px', left: '175px', position: 'absolute'}}>
                             <h2><span style={{color: '#FFFFFF', textRendering: 'optimizelegibility', textShadow: '0 0 3px rgba(0, 0, 0, 0.8)', fontSize: '25px'}}>{profile.name} {profile.lastName}</span></h2>
+                        </div>
+                        <div  className="fb-name" style={{bottom: '0', right: '10px', position: 'absolute'}}>
+                        {profile.roles && profile.roles.find(role => role.name === 'ROLE_BUSINESS_USER') && 
+                            <span style={{color: '#FFFFFF', textRendering: 'optimizelegibility', textShadow: '0 0 3px rgba(0, 0, 0, 0.8)', fontSize: '15px'}}>- Biznis korisnik</span>
+                        }
                         </div>
                     </div>
 
                     <div className="panel-body" style={{background: '#fff', padding: "0 15px"}}>
 
                         <div className="profile-thumb" style={{float: 'left', position: 'relative'}}>
-                            <img src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="" style={{width: '140px', height: '140px', borderRadius: '50%', WebkitBorderRadius: '50%', marginTop: '-90px', border: '3px solid #fff'}} />
+                            <img src="https://www.w3schools.com/howto/img_avatar2.png" alt="" style={{width: '140px', height: '140px', borderRadius: '50%', WebkitBorderRadius: '50%', marginTop: '-90px', border: '3px solid #fff'}} />
                         </div>
 
                     </div>
@@ -113,7 +117,7 @@ function Profile(props) {
 
                 <div className="panel profile-info" style={{width: "100%", marginBottom: '20px'}} hidden={props.requestUserId}>
                     <form>
-                        <textarea ref={newPostText} className="form-control input-lg p-text-area" rows={2} placeholder="O čemu razmišljate?" style={{border: 'none', fontWeight: 300, boxShadow: 'none', color: '#c3c3c3', fontSize: '16px'}} defaultValue={""} />
+                        <textarea ref={newPostText} className="form-control input-lg p-text-area" rows={2} placeholder="O čemu razmišljate?" style={{border: 'none', fontWeight: 300, boxShadow: 'none', color: 'black', fontSize: '16px'}} defaultValue={""} />
                     </form>
 
                     <div>
@@ -131,7 +135,7 @@ function Profile(props) {
                 <>
                     {profile.posts.length === 0 && <h5 className="mt-5">Nema dosadašnjih objava.</h5>}
                     {profile.posts.map(post => <Post key={post.id} post={post} currentUserId={props.userId} commentingAllowed={props.userId !== null} 
-                                                        likePost={handleLikePost} getImagesURL={getImagesURL} />)}
+                                                        likePost={handleLikePost} />)}
                 </>
                 
                 </div>

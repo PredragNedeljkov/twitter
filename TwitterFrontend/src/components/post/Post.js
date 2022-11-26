@@ -23,7 +23,7 @@ function Post(props) {
         <div className="panel w-100 mb-2">
             <div className="panel-body" style={{background: '#fff', padding: "15px"}}>
             <div className="fb-user-thumb" style={{float: 'left', width: '70px', marginRight: '15px'}}>
-                <img src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="" style={{width: '70px', height: '70px', borderRadius: '50%', WebkitBorderRadius: '50%'}} />
+                <img src="https://www.w3schools.com/howto/img_avatar2.png" alt="" style={{width: '70px', height: '70px', borderRadius: '50%', WebkitBorderRadius: '50%'}} />
             </div>
 
             <div className="fb-user-details">
@@ -34,7 +34,7 @@ function Post(props) {
             <div className="clearfix" />
                 <p className="fb-user-status" style={{padding: '10px 0', lineHeight: '20px'}}>{props.post.content}</p>
 
-                {props.post.imagePath && <img className="img-fluid" src={props.getImagesURL() + props.post.imagePath} height="500px" width="100%" />}
+                {props.post.imagePath && <img className="img-fluid" src={"data:image/png;base64, " + props.post.imagePath} height="500px" width="100%" />}
 
                 {props.post.link && <a href={props.post.link} target="_blank">{props.post.link}</a>}
 

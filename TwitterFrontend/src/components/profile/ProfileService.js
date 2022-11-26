@@ -17,10 +17,6 @@ function dislikePost(requestBody, token) {
     return axios.post('posts/dislike', requestBody, {headers: {Authorization: token}});
 }
 
-function getImagesURL() {
-    return axios.defaults.baseURL + "upload/";
-}
-
 function followUser(requestBody, token) {
     return axios.post('following', requestBody, {headers: {Authorization: token}});
 }
@@ -38,7 +34,6 @@ export {
     saveNewComment,
     likePost,
     dislikePost,
-    getImagesURL,
     followUser,
     acceptFollowingRequest,
     declineFollowingRequest

@@ -12,21 +12,25 @@ import com.twitter.twitter_app.repository.PostsRepository;
 import com.twitter.twitter_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController()
 @CrossOrigin(origins = "*")
 @RequestMapping("/posts")
 public class PostsController {
+
+    private final String STATIC_RESOURCES_FOLDER = "src/main/resources/static/";
+    private final String UPLOADS_FOLDER = "upload/";
+
 
     @Autowired
     PostsRepository postsRepository;
@@ -46,6 +50,7 @@ public class PostsController {
         var dto = new UserAndPostsResponse();
         dto.setUserName(u.getName());
         dto.setUserLastName(u.getLastName());
+        dto.setRoles(u.getRoles());
 
         List<Post> posts = postsRepository.findPostsByUserId(userId).orElse(Collections.emptyList());
         List<PostDto> postDtos = new ArrayList<>();
@@ -66,16 +71,30 @@ public class PostsController {
 
     }
 
-    @PostMapping("")
+    @PostMapping(value = "", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     @PreAuthorize("hasRole('REGULAR_USER') or hasRole('BUSINESS_USER')")
-    ResponseEntity<?> addNewPost(@RequestBody SavePost requestBody) {
+    ResponseEntity<?> addNewPost(@ModelAttribute() SavePost requestBody, @RequestParam(value ="file", required=false) MultipartFile file) {
+        String encodedString = "";
+        if (file != null) {
+            try {
+                byte[] imageAsBytes = file.getBytes();
+                if (imageAsBytes.length > 2097152) {
+                    return ResponseEntity.badRequest().body("Image is too big");
+                }
+                encodedString = Base64.getEncoder().encodeToString(imageAsBytes);
+            } catch (IOException exception) {
+                exception.printStackTrace();
+                return ResponseEntity.badRequest().body("Bad image sent");
+            }
+        }
+
         Post newPost = new Post();
         newPost.setContent(requestBody.getContent());
         newPost.setUserId(requestBody.getUserId());
         newPost.setTimestamp(LocalDateTime.now());
         newPost.setUserName(requestBody.getUserName());
         newPost.setUserLastName(requestBody.getUserLastName());
-        newPost.setImage(requestBody.getImage());
+        newPost.setImage(encodedString);
         newPost.setLikes(new ArrayList<>());
 
         postsRepository.save(newPost);
@@ -106,4 +125,5 @@ public class PostsController {
             return ResponseEntity.badRequest().build();
         }
     }
+
 }

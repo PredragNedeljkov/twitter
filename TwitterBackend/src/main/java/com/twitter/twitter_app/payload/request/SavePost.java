@@ -8,5 +8,4 @@ public class SavePost {
     private String userId;
     private String userName;
     private String userLastName;
-    private String image;
 }
