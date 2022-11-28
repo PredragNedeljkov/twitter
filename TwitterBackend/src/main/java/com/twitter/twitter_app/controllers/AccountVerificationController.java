@@ -64,4 +64,6 @@ public class AccountVerificationController {
         secureTokenService.removeToken(secureToken);
         return true;
     }
+
+
 }

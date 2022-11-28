@@ -7,7 +7,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {connect} from "react-redux";
-import roles from "../../../constants";
 
 function Navbar(props) {
 
@@ -49,7 +48,6 @@ function mapDispatchToProps(dispatch) {
 function mapStateToProps(state) {
     return {
         userName: state.userName,
-        isAdmin: state.role === roles.ADMINISTRATOR
     }
 }
 

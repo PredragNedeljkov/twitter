@@ -1,6 +1,6 @@
 import { useState} from 'react';
 import {login} from "./LoginService";
-import {useHistory} from "react-router-dom";
+import {Link, useHistory} from "react-router-dom";
 import RetryError from "../common/errors/RetryError";
 import Loader from "../common/loaders/Loader";
 import {connect} from "react-redux";
@@ -65,6 +65,10 @@ function Login(props) {
                 {showError?<label className="text-danger">Korisničko ime ili lozinka nisu ispravni</label>:null}
                 <Loader isActive={isLoaderShown} />
                 <button className="btn btn-lg btn-primary btn-block" type="submit">Ulogujte se</button>
+
+                <div className="text-center text-white mt-2">
+                    Zaboravili ste lozinku? Kreirajte novu <Link to={"/forgotten-password"}>ovde</Link>
+                </div>
             </form>
             }
         </div>

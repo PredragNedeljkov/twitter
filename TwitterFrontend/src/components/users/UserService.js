@@ -12,23 +12,24 @@ function saveUser(requestBody, token) {
     return axios.post('/users/register', requestBody, {headers: {Authorization: token}})
 }
 
-function changePassword(userId, requestBody, token) {
-    return axios.patch('/auth/change-password/' + userId, requestBody, {headers: {Authorization: token}})
+function passwordForgotten(requestBody) {
+    return axios.post('/api/auth/forgotten-password/', requestBody)
+}
+
+function changePassword(requestBody) {
+    return axios.post('/api/auth/change-password/', requestBody)
 }
 
 function fetchUserData(userId, token) {
     return axios.get('/users/' + userId, {headers: {Authorization: token}});
 }
 
-function saveUserProfile(requestBody, userId, token) {
-    return axios.put('/users/' + userId, requestBody, {headers: {Authorization: token}});
-}
 
 export {
     getUsers,
     getUserById,
     saveUser,
-    changePassword,
+    passwordForgotten,
     fetchUserData, 
-    saveUserProfile
+    changePassword,
 }

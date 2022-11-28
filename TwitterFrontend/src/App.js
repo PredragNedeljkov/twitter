@@ -9,6 +9,8 @@ import AlertsContainer from "./components/alerts/AlertsContainer";
 import MyProfile from './components/profile/MyProfile';
 import UserProfile from './components/profile/UserProfile';
 import RegisterBusiness from './components/register/RegisterBusiness';
+import PasswordForgotten from './components/password-forgotten/PasswordForgotten';
+import PasswordChange from './components/password-change/PasswordChange';
 
 
 function App(props) {
@@ -26,6 +28,8 @@ function App(props) {
         <Switch>
             <Route path="/login" exact component={Login} />
             <Route path="/register" exact component={Register} />
+            <Route path="/forgotten-password" exact component={PasswordForgotten} />
+            <Route path="/password/change" exact component={PasswordChange} />
             <Route path="/register-business" exact component={RegisterBusiness} />
             <Route path="/my-profile" exact component={MyProfile} />
             <Route path="/profiles/:userId" exact component={UserProfile} />

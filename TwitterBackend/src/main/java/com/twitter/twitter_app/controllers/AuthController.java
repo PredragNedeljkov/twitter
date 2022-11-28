@@ -1,21 +1,20 @@
 package com.twitter.twitter_app.controllers;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import javax.annotation.Resource;
+import javax.mail.MessagingException;
 import javax.validation.Valid;
 
 import com.twitter.twitter_app.email.context.AccountVerificationEmailContext;
+import com.twitter.twitter_app.email.context.ForgotPasswordEmailContext;
 import com.twitter.twitter_app.email.services.EmailService;
+import com.twitter.twitter_app.exceptions.InvalidTokenException;
 import com.twitter.twitter_app.models.ERole;
 import com.twitter.twitter_app.models.Role;
 import com.twitter.twitter_app.models.User;
-import com.twitter.twitter_app.payload.request.LoginRequest;
-import com.twitter.twitter_app.payload.request.SignupBusinessRequest;
-import com.twitter.twitter_app.payload.request.SignupRequest;
+import com.twitter.twitter_app.payload.request.*;
 import com.twitter.twitter_app.payload.response.JwtResponse;
 import com.twitter.twitter_app.payload.response.MessageResponse;
 import com.twitter.twitter_app.repository.RoleRepository;
@@ -46,6 +45,9 @@ import com.twitter.twitter_app.security.services.UserDetailsImpl;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+	@Value("${front.app.url}")
+	String frontendBaseUrl;
+
 	@Value("${site.base.url.https}")
 	private String baseURL;
 	@Autowired
@@ -67,10 +69,13 @@ public class AuthController {
 	EmailService emailService;
 
 	@Autowired
-	SecureTokenRepository tokenRepository;
+	private SecureTokenRepository tokenRepository;
 
 	@Autowired
-	SecureTokenService tokenService;
+	private SecureTokenService tokenService;
+
+	@Resource
+	private SecureTokenService secureTokenService;
 
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -180,5 +185,57 @@ public class AuthController {
 			e.printStackTrace();
 		}
 
+	}
+
+	@PostMapping("/forgotten-password")
+	public ResponseEntity<?> registerBusinessUser(@Valid @RequestBody ForgottenPasswordRequest request) {
+		Optional<User> user= userRepository.findByEmail(request.getEmail());
+		user.ifPresent(this::sendResetPasswordEmail);
+
+		return ResponseEntity.ok().build();
+	}
+
+	protected void sendResetPasswordEmail(User user) {
+		SecureToken secureToken= tokenService.createSecureToken();
+		secureToken.setUser(user);
+		tokenRepository.save(secureToken);
+		ForgotPasswordEmailContext emailContext = new ForgotPasswordEmailContext();
+		emailContext.init(user);
+		emailContext.setToken(secureToken.getToken());
+		emailContext.buildVerificationUrl(frontendBaseUrl, secureToken.getToken());
+		try {
+			emailService.sendMail(emailContext);
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@PostMapping("/change-password")
+	public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+
+		try {
+			changePassword(request.getToken(), request.getPassword());
+		} catch (InvalidTokenException e) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		return ResponseEntity.ok().build();
+	}
+
+	public boolean changePassword(String token, String newPassword) throws InvalidTokenException {
+		SecureToken secureToken = secureTokenService.findByToken(token);
+		if(Objects.isNull(secureToken) || !token.equals(secureToken.getToken()) || secureToken.isExpired()){
+			throw new InvalidTokenException("Token is not valid");
+		}
+		Optional<User> userOpt = userRepository.findById(secureToken.getUser().getId());
+		if(userOpt.isEmpty()){
+			return false;
+		}
+		User user = userOpt.get();
+		user.setPassword(encoder.encode(newPassword));
+		userRepository.save(user);
+
+		secureTokenService.removeToken(secureToken);
+		return true;
 	}
 }

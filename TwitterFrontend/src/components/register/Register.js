@@ -1,5 +1,5 @@
 import { useState} from "react";
-import { useHistory } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import ModalLoader from "../common/loaders/ModalLoader";
 import {createErrorAlert, createSuccessAlert} from "../../alertHelper";
 import { register } from "./RegisterService";
@@ -78,7 +78,7 @@ function Register(props) {
                 <button className="btn btn-lg btn-primary btn-block" type="submit" disabled={buttonDisabled}>Registrujte se</button>
 
                 <div className="text-center text-white mt-2">
-                    Vodite biznis? Registrujte se kao bizis korisnik <a href="/register-business">Registracija</a>
+                    Vodite biznis? Registrujte se kao bizis korisnik <Link to={"/register-business"}>Registracija</Link>
                 </div>
             </form>
 
