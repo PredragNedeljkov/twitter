@@ -41,6 +41,8 @@ public class User {
   @Size(max = 120)
   private String password;
 
+  private boolean accountVerified;
+
   @DBRef
   private Set<Role> roles = new HashSet<>();
 

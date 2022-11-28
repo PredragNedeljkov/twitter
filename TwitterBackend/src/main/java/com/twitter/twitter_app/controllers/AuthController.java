@@ -2,11 +2,14 @@ package com.twitter.twitter_app.controllers;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import com.twitter.twitter_app.email.context.AccountVerificationEmailContext;
+import com.twitter.twitter_app.email.services.EmailService;
 import com.twitter.twitter_app.models.ERole;
 import com.twitter.twitter_app.models.Role;
 import com.twitter.twitter_app.models.User;
@@ -16,8 +19,13 @@ import com.twitter.twitter_app.payload.request.SignupRequest;
 import com.twitter.twitter_app.payload.response.JwtResponse;
 import com.twitter.twitter_app.payload.response.MessageResponse;
 import com.twitter.twitter_app.repository.RoleRepository;
+import com.twitter.twitter_app.repository.SecureTokenRepository;
 import com.twitter.twitter_app.security.jwt.JwtUtils;
+import com.twitter.twitter_app.security.models.SecureToken;
+import com.twitter.twitter_app.security.services.SecureTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,6 +45,9 @@ import com.twitter.twitter_app.security.services.UserDetailsImpl;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+	@Value("${site.base.url.https}")
+	private String baseURL;
 	@Autowired
 	AuthenticationManager authenticationManager;
 
@@ -52,6 +63,15 @@ public class AuthController {
 	@Autowired
 	JwtUtils jwtUtils;
 
+	@Autowired
+	EmailService emailService;
+
+	@Autowired
+	SecureTokenRepository tokenRepository;
+
+	@Autowired
+	SecureTokenService tokenService;
+
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 
@@ -65,6 +85,11 @@ public class AuthController {
 		List<String> roles = userDetails.getAuthorities().stream()
 				.map(item -> item.getAuthority())
 				.collect(Collectors.toList());
+
+		Optional<User> optUser = userRepository.findById(userDetails.getId());
+		if (!optUser.get().isAccountVerified()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
 
 		return ResponseEntity.ok(new JwtResponse(jwt,
 												 userDetails.getId(), 
@@ -102,6 +127,8 @@ public class AuthController {
 		user.setRoles(roles);
 		userRepository.save(user);
 
+		sendRegistrationConfirmationEmail(user);
+
 		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
 	}
 
@@ -134,6 +161,24 @@ public class AuthController {
 		user.setRoles(roles);
 		userRepository.save(user);
 
+		sendRegistrationConfirmationEmail(user);
+
 		return ResponseEntity.ok(new MessageResponse("Business user registered successfully!"));
+	}
+
+	public void sendRegistrationConfirmationEmail(User user) {
+		SecureToken secureToken= tokenService.createSecureToken();
+		secureToken.setUser(user);
+		tokenRepository.save(secureToken);
+		AccountVerificationEmailContext emailContext = new AccountVerificationEmailContext();
+		emailContext.init(user);
+		emailContext.setToken(secureToken.getToken());
+		emailContext.buildVerificationUrl(baseURL, secureToken.getToken());
+		try {
+			emailService.sendMail(emailContext);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 }

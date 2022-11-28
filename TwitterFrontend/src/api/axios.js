@@ -8,8 +8,8 @@ const instance = axios.create({
 instance.interceptors.response.use(response => {
     return response;
 }, error => {
-    console.log(error)
-    if (error.response.status === 401) {
+    console.log(error.response)
+    if (error.response.status === 401 && error.response.config.url !== 'api/auth/signin') {
         window.location.href = '/login';
     } else if (error.response.status === 404) {
         window.location.href = '/error';
