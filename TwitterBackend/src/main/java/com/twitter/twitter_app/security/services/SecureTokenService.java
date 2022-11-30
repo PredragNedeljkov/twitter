@@ -1,9 +1,6 @@
 package com.twitter.twitter_app.security.services;
 
-import com.twitter.twitter_app.security.models.SecureToken;
-import org.apache.tomcat.util.codec.binary.Base64;
-
-import java.time.LocalDateTime;
+import com.twitter.twitter_app.models.SecureToken;
 
 public interface SecureTokenService {
     SecureToken createSecureToken();

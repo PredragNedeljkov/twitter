@@ -1,4 +1,4 @@
-package com.twitter.twitter_app.security.models;
+package com.twitter.twitter_app.models;
 
 import com.twitter.twitter_app.models.User;
 import lombok.Data;

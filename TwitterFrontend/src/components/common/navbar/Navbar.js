@@ -17,7 +17,8 @@ function Navbar(props) {
         props.setAuthData();
         localStorage.removeItem('Token');
         localStorage.removeItem('userName');
-        history.push("/");
+        localStorage.removeItem('userId');
+        history.push("/login");
     }
 
     return (

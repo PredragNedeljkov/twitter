@@ -20,7 +20,8 @@ import com.twitter.twitter_app.payload.response.MessageResponse;
 import com.twitter.twitter_app.repository.RoleRepository;
 import com.twitter.twitter_app.repository.SecureTokenRepository;
 import com.twitter.twitter_app.security.jwt.JwtUtils;
-import com.twitter.twitter_app.security.models.SecureToken;
+import com.twitter.twitter_app.models.SecureToken;
+import com.twitter.twitter_app.security.services.AuthHelperService;
 import com.twitter.twitter_app.security.services.SecureTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,12 +45,7 @@ import com.twitter.twitter_app.security.services.UserDetailsImpl;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
-	@Value("${front.app.url}")
-	String frontendBaseUrl;
-
-	@Value("${site.base.url.https}")
-	private String baseURL;
+	
 	@Autowired
 	AuthenticationManager authenticationManager;
 
@@ -68,14 +64,8 @@ public class AuthController {
 	@Autowired
 	EmailService emailService;
 
-	@Autowired
-	private SecureTokenRepository tokenRepository;
-
-	@Autowired
-	private SecureTokenService tokenService;
-
 	@Resource
-	private SecureTokenService secureTokenService;
+	private AuthHelperService authHelperService;
 
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -132,7 +122,7 @@ public class AuthController {
 		user.setRoles(roles);
 		userRepository.save(user);
 
-		sendRegistrationConfirmationEmail(user);
+		authHelperService.sendRegistrationConfirmationEmail(user);
 
 		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
 	}
@@ -166,76 +156,28 @@ public class AuthController {
 		user.setRoles(roles);
 		userRepository.save(user);
 
-		sendRegistrationConfirmationEmail(user);
+		authHelperService.sendRegistrationConfirmationEmail(user);
 
 		return ResponseEntity.ok(new MessageResponse("Business user registered successfully!"));
-	}
-
-	public void sendRegistrationConfirmationEmail(User user) {
-		SecureToken secureToken= tokenService.createSecureToken();
-		secureToken.setUser(user);
-		tokenRepository.save(secureToken);
-		AccountVerificationEmailContext emailContext = new AccountVerificationEmailContext();
-		emailContext.init(user);
-		emailContext.setToken(secureToken.getToken());
-		emailContext.buildVerificationUrl(baseURL, secureToken.getToken());
-		try {
-			emailService.sendMail(emailContext);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
 	}
 
 	@PostMapping("/forgotten-password")
 	public ResponseEntity<?> registerBusinessUser(@Valid @RequestBody ForgottenPasswordRequest request) {
 		Optional<User> user= userRepository.findByEmail(request.getEmail());
-		user.ifPresent(this::sendResetPasswordEmail);
+		user.ifPresent(authHelperService::sendResetPasswordEmail);
 
 		return ResponseEntity.ok().build();
-	}
-
-	protected void sendResetPasswordEmail(User user) {
-		SecureToken secureToken= tokenService.createSecureToken();
-		secureToken.setUser(user);
-		tokenRepository.save(secureToken);
-		ForgotPasswordEmailContext emailContext = new ForgotPasswordEmailContext();
-		emailContext.init(user);
-		emailContext.setToken(secureToken.getToken());
-		emailContext.buildVerificationUrl(frontendBaseUrl, secureToken.getToken());
-		try {
-			emailService.sendMail(emailContext);
-		} catch (MessagingException e) {
-			e.printStackTrace();
-		}
 	}
 
 	@PostMapping("/change-password")
 	public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
 
 		try {
-			changePassword(request.getToken(), request.getPassword());
+			authHelperService.changePassword(request.getToken(), request.getPassword());
 		} catch (InvalidTokenException e) {
 			return ResponseEntity.badRequest().build();
 		}
 
 		return ResponseEntity.ok().build();
-	}
-
-	public boolean changePassword(String token, String newPassword) throws InvalidTokenException {
-		SecureToken secureToken = secureTokenService.findByToken(token);
-		if(Objects.isNull(secureToken) || !token.equals(secureToken.getToken()) || secureToken.isExpired()){
-			throw new InvalidTokenException("Token is not valid");
-		}
-		Optional<User> userOpt = userRepository.findById(secureToken.getUser().getId());
-		if(userOpt.isEmpty()){
-			return false;
-		}
-		User user = userOpt.get();
-		user.setPassword(encoder.encode(newPassword));
-		userRepository.save(user);
-
-		secureTokenService.removeToken(secureToken);
-		return true;
 	}
 }

@@ -1,7 +1,7 @@
 package com.twitter.twitter_app.security.services;
 
 import com.twitter.twitter_app.repository.SecureTokenRepository;
-import com.twitter.twitter_app.security.models.SecureToken;
+import com.twitter.twitter_app.models.SecureToken;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

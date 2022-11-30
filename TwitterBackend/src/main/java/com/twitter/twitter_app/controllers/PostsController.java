@@ -43,7 +43,7 @@ public class PostsController {
     ResponseEntity<UserAndPostsResponse> getPostsByUser(@PathVariable String userId) {
         var optUser = userRepository.findById(userId);
         if (!optUser.isPresent()) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
 
         User u = optUser.get();
